@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { SharePointSpaConfig } from './SharePointSpaConfig';
 import {
   SharePointConfig,
   SharePointItem,
@@ -99,7 +100,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   const [isCustomGoogleOpen, setIsCustomGoogleOpen] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'items' | 'connection' | 'console' | 'schema'>('items');
+  const [activeTab, setActiveTab] = useState<'items' | 'connection' | 'console' | 'schema' | 'spa_oauth'>('items');
   const [config, setConfig] = useState<SharePointConfig>(getSharePointConfig());
   const [lists, setLists] = useState<SharePointList[]>(getSharePointLists());
   const [selectedListId, setSelectedListId] = useState<string>(lists[0]?.id || '');
@@ -943,6 +944,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
             <Sliders className="w-3.5 h-3.5" />
             Columns & Schema
           </button>
+          <button
+            onClick={() => setActiveTab('spa_oauth')}
+            id="tab-btn-spa"
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              activeTab === 'spa_oauth'
+                ? 'bg-amber-600 text-white shadow-md shadow-amber-700/40'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            SPA OAuth
+          </button>
+
         </div>
 
         {/* Action Controls & Session Management */}
