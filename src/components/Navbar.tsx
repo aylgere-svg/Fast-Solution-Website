@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, Zap, Menu, X, ArrowRight, Phone, Sparkles, Flame } from 'lucide-react';
+import { Cloud, Zap, Menu, X, ArrowRight, Phone, Sparkles, Flame, Database } from 'lucide-react';
 import { BRAND } from '../data/content.ts';
 
 interface NavbarProps {
@@ -7,6 +7,7 @@ interface NavbarProps {
   onOpenAnalyzer: () => void;
   onNavigateToContact: () => void;
   onNavigateToCard?: (cardIndex: number) => void;
+  onOpenAdmin?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -14,6 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAnalyzer,
   onNavigateToContact,
   onNavigateToCard,
+  onOpenAdmin,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -93,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Action CTAs */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2.5">
             <button
               onClick={onOpenAnalyzer}
               id="nav-analyzer-btn"

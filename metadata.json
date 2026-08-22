@@ -1,6 +1,6 @@
 {
   "name": "FAST Solutions",
-  "description": "Modern, responsive single-page marketing website for FAST Solutions featuring AI automation, custom business applications, web design, key metrics, client testimonials, and interactive business analyzer.",
+  "description": "Modern, responsive website and interactive platform for FAST Solutions featuring AI automation, custom business applications, interactive Process Analyzer, SharePoint List Location management & synchronization engine, and secure Admin authentication.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

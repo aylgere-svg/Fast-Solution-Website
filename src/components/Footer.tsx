@@ -1,15 +1,17 @@
 import React from 'react';
 import { BRAND } from '../data/content.ts';
-import { Cloud, Zap, Mail, Phone, MapPin, ArrowUp, Sparkles, Shield, Heart, Flame } from 'lucide-react';
+import { Cloud, Zap, Mail, Phone, MapPin, ArrowUp, Sparkles, Shield, Heart, Flame, Database } from 'lucide-react';
 
 interface FooterProps {
   onOpenLimitedOffer: () => void;
   onOpenAnalyzer: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onOpenLimitedOffer,
   onOpenAnalyzer,
+  onOpenAdmin,
 }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });

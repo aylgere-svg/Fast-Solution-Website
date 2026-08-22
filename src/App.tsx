@@ -7,6 +7,7 @@ import { FullPageBackgroundCanvas } from './components/FullPageBackgroundCanvas.
 import { CinematicCardDeck } from './components/CinematicCardDeck.tsx';
 import { LimitedOfferModal } from './components/LimitedOfferModal.tsx';
 import { AiAnalyzerModal } from './components/AiAnalyzerModal.tsx';
+import { AdminDashboard } from './components/admin/AdminDashboard.tsx';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -15,10 +16,77 @@ if (typeof window !== 'undefined') {
 export default function App() {
   const [isLimitedOfferOpen, setIsLimitedOfferOpen] = useState(false);
   const [isAnalyzerOpen, setIsAnalyzerOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [selectedServicePreload, setSelectedServicePreload] = useState('');
   const [lenisInstance, setLenisInstance] = useState<Lenis | null>(null);
 
   const totalCards = 7;
+
+  // URL routing for hidden Admin Dashboard (#admin, ?admin=true, #/admin, #sharepoint, /admin)
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      const hash = (window.location.hash || '').toLowerCase();
+      const search = (window.location.search || '').toLowerCase();
+      const path = (window.location.pathname || '').toLowerCase();
+
+      if (
+        hash === '#admin' ||
+        hash === '#/admin' ||
+        hash === '#sharepoint' ||
+        hash === '#db' ||
+        hash === '#dashboard' ||
+        search.includes('admin=true') ||
+        search.includes('portal=admin') ||
+        search.includes('mode=admin') ||
+        path === '/admin'
+      ) {
+        setIsAdminOpen(true);
+      }
+    };
+
+    // Check immediately on initial mount
+    checkAdminRoute();
+
+    // Listen for hash and popstate changes
+    window.addEventListener('hashchange', checkAdminRoute);
+    window.addEventListener('popstate', checkAdminRoute);
+
+    // Global keyboard shortcut: Ctrl + Shift + A (or Cmd + Shift + A) to toggle Admin
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        setIsAdminOpen((prev) => {
+          const next = !prev;
+          if (next) {
+            window.history.pushState(null, '', '#admin');
+          } else {
+            window.history.pushState(null, '', window.location.pathname + window.location.search);
+          }
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('hashchange', checkAdminRoute);
+      window.removeEventListener('popstate', checkAdminRoute);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const handleOpenAdmin = () => {
+    window.history.pushState(null, '', '#admin');
+    setIsAdminOpen(true);
+  };
+
+  const handleCloseAdmin = () => {
+    setIsAdminOpen(false);
+    if (window.location.hash === '#admin' || window.location.hash === '#/admin' || window.location.hash === '#sharepoint' || window.location.hash === '#db') {
+      window.history.pushState(null, '', window.location.pathname + window.location.search);
+    }
+  };
 
   // Initialize Lenis for luxurious buttery smooth scrolling
   useEffect(() => {
@@ -130,6 +198,7 @@ export default function App() {
         onOpenAnalyzer={handleOpenAnalyzer}
         onNavigateToContact={handleNavigateToContact}
         onNavigateToCard={handleNavigateToCard}
+        onOpenAdmin={() => setIsAdminOpen(true)}
       />
 
       {/* Cinematic Card Stacking & Curtain Reveal Deck with Dynamic 3D Rotational Momentum */}
@@ -140,6 +209,7 @@ export default function App() {
           onNavigateToContact={handleNavigateToContact}
           onSelectService={handleSelectService}
           selectedServicePreload={selectedServicePreload}
+          onOpenAdmin={() => setIsAdminOpen(true)}
         />
       </main>
 
@@ -154,6 +224,12 @@ export default function App() {
         isOpen={isAnalyzerOpen}
         onClose={() => setIsAnalyzerOpen(false)}
         onSelectResult={handleSelectAnalyzerResult}
+      />
+
+      {/* Admin Dashboard for SharePoint List Database via Microsoft Graph */}
+      <AdminDashboard
+        isOpen={isAdminOpen}
+        onClose={handleCloseAdmin}
       />
     </div>
   );

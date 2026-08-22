@@ -21,6 +21,7 @@ interface CinematicCardDeckProps {
   onNavigateToContact: () => void;
   onSelectService: (serviceName: string) => void;
   selectedServicePreload: string;
+  onOpenAdmin?: () => void;
 }
 
 export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
@@ -29,6 +30,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
   onNavigateToContact,
   onSelectService,
   selectedServicePreload,
+  onOpenAdmin,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -264,6 +266,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
             <Footer
               onOpenLimitedOffer={onOpenLimitedOffer}
               onOpenAnalyzer={onOpenAnalyzer}
+              onOpenAdmin={onOpenAdmin}
             />
           </div>
         </div>

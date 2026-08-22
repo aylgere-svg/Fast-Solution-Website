@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BRAND, SERVICES } from '../data/content.ts';
 import { ContactFormData } from '../types.ts';
+import { recordPublicInquiryToSharePoint } from '../services/graphService.ts';
 import {
   MapPin,
   Mail,
@@ -62,6 +63,20 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     }
 
     setIsSubmitting(true);
+
+    // Save directly to SharePoint List
+    try {
+      recordPublicInquiryToSharePoint({
+        title: `${formData.service} Inquiry - ${formData.name}`,
+        clientName: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        service: formData.service,
+        notes: `Company: ${formData.company || 'N/A'}. Message: ${formData.message}`,
+        source: 'Website Contact Form',
+        estimatedValue: 5000,
+      });
+    } catch (err) {}
 
     // Simulate reliable dispatch
     setTimeout(() => {
