@@ -3,7 +3,7 @@
 // Load all frames reliably using Vite's eager asset glob import
 const frameModules: Record<string, { default: string } | string> = (
   import.meta as any
-).glob('../assets/frames/*.jpg', {
+).glob('../assets/frames/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', {
   eager: true,
 });
 
@@ -21,13 +21,18 @@ export const frameUrls: string[] = Object.keys(frameModules)
   })
   .filter(Boolean);
 
-// Fallback generator if needed
+// Fallback generator with base URL support for Git / GitHub Pages / Subpath deployments
 export const getFallbackFrameUrl = (frameNum: number): string => {
   const padded = Math.min(Math.max(1, frameNum), 100)
     .toString()
     .padStart(3, '0');
+  
   if (frameUrls && frameUrls[frameNum - 1]) {
     return frameUrls[frameNum - 1];
   }
-  return `/ezgif-frame-${padded}.jpg`;
+
+  // Ensure compatibility with subpath deployments (e.g., https://username.github.io/repo-name/)
+  const rawBase = import.meta.env.BASE_URL || './';
+  const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+  return `${base}ezgif-frame-${padded}.jpg`;
 };
