@@ -816,18 +816,17 @@ export const requestAzureEntraToken = async (
   }
 
   try {
-    const params = new URLSearchParams();
-    params.append('client_id', clientId);
-    params.append('scope', scopes);
-    params.append('client_secret', clientSecret);
-    params.append('grant_type', 'client_credentials');
-
-    const res = await fetch(endpoint, {
+    const res = await fetch('/api/azure-token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: params.toString(),
+      body: JSON.stringify({
+        tenantId: tenant,
+        clientId,
+        clientSecret,
+        scopes,
+      }),
     });
 
     const latencyMs = Math.round(performance.now() - startTime);
