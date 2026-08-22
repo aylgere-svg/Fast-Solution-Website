@@ -1,0 +1,6 @@
+{
+  "name": "FAST Solutions",
+  "description": "Modern, responsive single-page marketing website for FAST Solutions featuring AI automation, custom business applications, web design, key metrics, client testimonials, and interactive business analyzer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
