@@ -421,6 +421,16 @@ export const recordPublicInquiryToSharePoint = (data: {
 };
 
 // SharePoint Engine: Fetch items for a SharePoint List Location
+
+const getGraphListUrl = (config: SharePointConfig, listId: string) => {
+  let site = config.siteId?.trim() || 'fassolutions.sharepoint.com/sites/FASMainS';
+  if (site.includes('/')) {
+    const parts = site.split('/');
+    site = `${parts[0]}:/${parts.slice(1).join('/')}:`;
+  }
+  return `https://graph.microsoft.com/v1.0/sites/${site}/lists/${listId}/items`;
+};
+
 export const fetchSharePointItemsViaGraph = async (
   config: SharePointConfig,
   listId: string
@@ -430,6 +440,50 @@ export const fetchSharePointItemsViaGraph = async (
   const currentList = lists.find((l) => l.id === listId);
   const locationUrl = currentList?.locationUrl || config.listLocationUrl || `${config.siteUrl}/Lists/${listId}`;
   const webhookUrl = currentList?.directWebhookUrl || config.directWebhookUrl;
+
+  // Real Microsoft Graph API logic
+  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+    try {
+      const graphUrl = getGraphListUrl(config, listId) + '?expand=fields';
+      const response = await fetch(graphUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Accept': 'application/json'
+        }
+      });
+      const durationMs = Math.round(performance.now() - startTime);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const items: SharePointItem[] = (data.value || []).map((item: any) => ({
+          id: String(item.id),
+          createdDateTime: item.createdDateTime,
+          lastModifiedDateTime: item.lastModifiedDateTime,
+          webUrl: item.webUrl || locationUrl,
+          fields: item.fields || {},
+        }));
+        
+        saveLocalListItems(listId, items);
+        
+        addGraphLog({
+          method: 'GET',
+          endpoint: graphUrl,
+          status: response.status,
+          statusText: '200 OK (Microsoft Graph)',
+          durationMs,
+          responseBody: { count: items.length },
+        });
+        
+        return { items, source: 'live_graph', durationMs };
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        console.error('Graph API error fetching items:', errData);
+      }
+    } catch (err) {
+      console.warn('Graph API network error', err);
+    }
+  }
 
   // If a direct webhook endpoint is configured (e.g. Power Automate / Logic App SharePoint Connector)
   if (webhookUrl && webhookUrl.trim() && config.authMode === 'webhook_proxy') {
@@ -513,6 +567,55 @@ export const createSharePointItemViaGraph = async (
     },
   };
 
+  // Real Microsoft Graph API logic
+  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+    try {
+      const graphUrl = getGraphListUrl(config, listId);
+      const payload = { fields };
+      const response = await fetch(graphUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      const durationMs = Math.round(performance.now() - startTime);
+      
+      if (response.ok || response.status === 201) {
+        const liveCreated = await response.json();
+        const savedItem: SharePointItem = {
+          id: String(liveCreated.id),
+          createdDateTime: liveCreated.createdDateTime,
+          lastModifiedDateTime: liveCreated.lastModifiedDateTime,
+          webUrl: liveCreated.webUrl || locationUrl,
+          fields: liveCreated.fields || fields,
+        };
+        
+        const existing = getLocalListItems(listId);
+        saveLocalListItems(listId, [savedItem, ...existing]);
+        
+        addGraphLog({
+          method: 'POST',
+          endpoint: graphUrl,
+          status: response.status,
+          statusText: '201 Created (Microsoft Graph)',
+          durationMs,
+          requestBody: payload,
+          responseBody: savedItem,
+        });
+        
+        return savedItem;
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        console.error('Graph API error creating item:', errData);
+      }
+    } catch (err) {
+      console.warn('Graph API network error', err);
+    }
+  }
+
   // If a direct webhook is connected
   if (webhookUrl && webhookUrl.trim() && config.authMode === 'webhook_proxy') {
     try {
@@ -586,6 +689,58 @@ export const updateSharePointItemViaGraph = async (
   const locationUrl = currentList?.locationUrl || config.listLocationUrl || `${config.siteUrl}/Lists/${listId}`;
   const webhookUrl = currentList?.directWebhookUrl || config.directWebhookUrl;
 
+  // Real Microsoft Graph API logic
+  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+    try {
+      const graphUrl = `${getGraphListUrl(config, listId)}/${itemId}`;
+      const payload = { fields };
+      const response = await fetch(graphUrl, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      const durationMs = Math.round(performance.now() - startTime);
+      
+      if (response.ok || response.status === 200) {
+        const liveUpdated = await response.json();
+        const existing = getLocalListItems(listId);
+        const index = existing.findIndex((i) => i.id === itemId);
+        let updatedItem = existing[index];
+        
+        if (index !== -1) {
+          updatedItem = {
+            ...existing[index],
+            lastModifiedDateTime: liveUpdated.lastModifiedDateTime,
+            fields: liveUpdated.fields || fields,
+          };
+          existing[index] = updatedItem;
+          saveLocalListItems(listId, [...existing]);
+        }
+        
+        addGraphLog({
+          method: 'PATCH',
+          endpoint: graphUrl,
+          status: response.status,
+          statusText: '200 OK (Microsoft Graph)',
+          durationMs,
+          requestBody: payload,
+          responseBody: updatedItem,
+        });
+        
+        return updatedItem;
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        console.error('Graph API error updating item:', errData);
+      }
+    } catch (err) {
+      console.warn('Graph API network error', err);
+    }
+  }
+
   if (webhookUrl && webhookUrl.trim() && config.authMode === 'webhook_proxy') {
     try {
       await fetch(webhookUrl.trim(), {
@@ -639,6 +794,42 @@ export const deleteSharePointItemViaGraph = async (
   const currentList = lists.find((l) => l.id === listId);
   const locationUrl = currentList?.locationUrl || config.listLocationUrl || `${config.siteUrl}/Lists/${listId}`;
   const webhookUrl = currentList?.directWebhookUrl || config.directWebhookUrl;
+
+  // Real Microsoft Graph API logic
+  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+    try {
+      const graphUrl = `${getGraphListUrl(config, listId)}/${itemId}`;
+      const response = await fetch(graphUrl, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`
+        }
+      });
+      const durationMs = Math.round(performance.now() - startTime);
+      
+      if (response.ok || response.status === 204) {
+        const existing = getLocalListItems(listId);
+        const filtered = existing.filter((i) => i.id !== itemId);
+        saveLocalListItems(listId, filtered);
+        
+        addGraphLog({
+          method: 'DELETE',
+          endpoint: graphUrl,
+          status: response.status || 204,
+          statusText: '204 No Content (Microsoft Graph)',
+          durationMs,
+          responseBody: { itemId, status: 'deleted', locationUrl },
+        });
+        
+        return true;
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        console.error('Graph API error deleting item:', errData);
+      }
+    } catch (err) {
+      console.warn('Graph API network error', err);
+    }
+  }
 
   if (webhookUrl && webhookUrl.trim() && config.authMode === 'webhook_proxy') {
     try {
