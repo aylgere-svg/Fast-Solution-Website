@@ -198,11 +198,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
       const currentConfig = getSharePointConfig();
       setConfig(currentConfig);
       const currentLists = getSharePointLists();
-      setLists(currentLists);
-      if (!selectedListId && currentLists.length > 0) {
-        setSelectedListId(currentLists[0].id);
-      }
-      loadItems(selectedListId || currentLists[0]?.id);
+      const contactList = currentLists.filter((list) => list.id === currentConfig.listId);
+      setLists(contactList);
+      const contactListId = contactList[0]?.id || currentConfig.listId;
+      setSelectedListId(contactListId);
+      loadItems(contactListId);
       setConsoleEndpoint(`${currentConfig.listLocationUrl || currentConfig.siteUrl}/items`);
     }
   }, [isOpen]);

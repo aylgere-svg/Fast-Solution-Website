@@ -38,6 +38,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: 'Contact', href: '#contact', cardIndex: 6 },
   ];
 
+  const mobileNavLinks = navLinks.filter((link) =>
+    ['Home', 'Services', 'About', 'Contact'].includes(link.label)
+  );
+
   const handleLinkClick = (e: React.MouseEvent, cardIndex: number) => {
     e.preventDefault();
     if (onNavigateToCard) {
@@ -142,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="md:hidden bg-[#0d0f17] border-b border-amber-500/20 px-4 pt-3 pb-6 space-y-3 mt-2 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-200"
         >
           <div className="flex flex-col space-y-1">
-            {navLinks.map((link) => (
+            {mobileNavLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
@@ -150,7 +154,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setMobileMenuOpen(false);
                   handleLinkClick(e, link.cardIndex);
                 }}
-                className="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-200 hover:bg-amber-900/30 hover:text-amber-300 transition-colors cursor-pointer"
+                className={`px-3 py-2.5 rounded-lg font-medium text-slate-200 hover:bg-amber-900/30 hover:text-amber-300 transition-colors cursor-pointer ${
+                  link.label === 'Services' ? 'text-xs' : 'text-sm'
+                }`}
               >
                 {link.label}
               </a>

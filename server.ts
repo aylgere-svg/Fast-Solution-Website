@@ -11,6 +11,62 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true }));
 
   // API routes
+  app.get('/api/contact-submission', async (req, res) => {
+    const listId = String(req.query.listId || process.env.SHAREPOINT_LIST_ID || '').trim();
+    const { SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, SHAREPOINT_CLIENT_SECRET, SHAREPOINT_SITE_ID } = process.env;
+    if (!listId || !SHAREPOINT_TENANT_ID || !SHAREPOINT_CLIENT_ID || !SHAREPOINT_CLIENT_SECRET || !SHAREPOINT_SITE_ID) {
+      return res.status(503).json({ error: 'SharePoint connection is not configured on the server.' });
+    }
+
+    try {
+      const tokenResponse = await fetch(`https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/v2.0/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: SHAREPOINT_CLIENT_ID,
+          client_secret: SHAREPOINT_CLIENT_SECRET,
+          scope: 'https://graph.microsoft.com/.default',
+          grant_type: 'client_credentials',
+        }),
+      });
+      const tokenData = await tokenResponse.json().catch(() => ({}));
+      if (!tokenResponse.ok || !tokenData.access_token) {
+        return res.status(502).json({ error: 'Microsoft Graph authentication failed.' });
+      }
+
+      let graphSiteId = SHAREPOINT_SITE_ID;
+      const colonSite = SHAREPOINT_SITE_ID.match(/^([^:]+):\/?(.+?):?$/);
+      if (colonSite && colonSite[1].includes('.sharepoint.com')) {
+        const sitePath = colonSite[2].replace(/^\/+|:$/g, '');
+        const siteLookup = await fetch(`https://graph.microsoft.com/v1.0/sites/${colonSite[1]}:/${sitePath}`, {
+          headers: { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/json' },
+        });
+        const siteData = await siteLookup.json().catch(() => ({}));
+        if (!siteLookup.ok || !siteData.id) {
+          return res.status(502).json({ error: 'Microsoft Graph could not find the configured SharePoint site.' });
+        }
+        graphSiteId = siteData.id;
+      }
+
+      const itemsResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${graphSiteId}/lists/${listId}/items?expand=fields`, {
+        headers: { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/json' },
+      });
+      const itemsData = await itemsResponse.json().catch(() => ({}));
+      if (!itemsResponse.ok) {
+        return res.status(502).json({ error: `Microsoft Graph returned HTTP ${itemsResponse.status}.` });
+      }
+      return res.json({ items: (itemsData.value || []).map((item: any) => ({
+        id: String(item.id),
+        createdDateTime: item.createdDateTime,
+        lastModifiedDateTime: item.lastModifiedDateTime,
+        webUrl: item.webUrl,
+        fields: item.fields || {},
+      })) });
+    } catch {
+      return res.status(502).json({ error: 'Unable to reach SharePoint.' });
+    }
+  });
+
   app.post('/api/contact-submission', async (req, res) => {
     const { title, clientName, email, phone, service, notes, source, estimatedValue } = req.body || {};
     if (!clientName?.trim() || !email?.trim()) {

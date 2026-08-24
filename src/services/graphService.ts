@@ -355,17 +355,7 @@ export const getLocalListItems = (listId: string): SharePointItem[] => {
     if (stored) {
       return JSON.parse(stored);
     }
-    // Seed initial items based on list ID
-    let initial: SharePointItem[] = [];
-    if (listId === 'd4810f92-721a-4c28-9844-38b47120a402') {
-      initial = INITIAL_LEADS_ITEMS;
-    } else if (listId === 'f82149b1-31a8-4e17-b712-491a0c841199') {
-      initial = INITIAL_PROJECTS_ITEMS;
-    } else if (listId === 'b19842a7-5421-49b2-a477-83c910fae312') {
-      initial = INITIAL_BOOKINGS_ITEMS;
-    }
-    localStorage.setItem(ITEMS_STORAGE_PREFIX + listId, JSON.stringify(initial));
-    return initial;
+    return [];
   } catch (err) {
     return [];
   }
@@ -386,10 +376,7 @@ export const recordPublicInquiryToSharePoint = async (data: {
   source?: string;
   estimatedValue?: number;
 }): Promise<SharePointItem> => {
-  const endpoint = import.meta.env.PROD
-    ? `${import.meta.env.BASE_URL}api/contact-submission.php`
-    : '/api/contact-submission';
-  const response = await fetch(endpoint, {
+  const response = await fetch('/api/contact-submission', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -447,6 +434,25 @@ export const fetchSharePointItemsViaGraph = async (
   const currentList = lists.find((l) => l.id === listId);
   const locationUrl = currentList?.locationUrl || config.listLocationUrl || `${config.siteUrl}/Lists/${listId}`;
   const webhookUrl = currentList?.directWebhookUrl || config.directWebhookUrl;
+
+  if (config.authMode === 'azure_app_registration') {
+    try {
+      const response = await fetch(`/api/contact-submission?listId=${encodeURIComponent(listId)}`);
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && Array.isArray(data.items)) {
+        const items = data.items as SharePointItem[];
+        saveLocalListItems(listId, items);
+        return {
+          items,
+          source: 'live_graph',
+          durationMs: Math.round(performance.now() - startTime),
+        };
+      }
+      throw new Error(data.error || `Contact list read failed with HTTP ${response.status}.`);
+    } catch (err) {
+      console.warn('Server-side SharePoint list read failed', err);
+    }
+  }
 
   // Real Microsoft Graph API logic
   if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
@@ -528,7 +534,7 @@ export const fetchSharePointItemsViaGraph = async (
           responseBody: { count: items.length, locationUrl },
         });
 
-        return { items: items.length > 0 ? items : getLocalListItems(listId), source: 'live_graph', durationMs };
+        return { items, source: 'live_graph', durationMs };
       }
     } catch (err) {
       console.warn('Webhook sync error, falling back to local list storage', err);
@@ -537,7 +543,7 @@ export const fetchSharePointItemsViaGraph = async (
 
   // Direct SharePoint List Location data retrieval
   const durationMs = Math.round(performance.now() - startTime) + 28;
-  const items = getLocalListItems(listId);
+  const items: SharePointItem[] = [];
 
   addGraphLog({
     method: 'GET',
