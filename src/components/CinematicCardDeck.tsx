@@ -54,6 +54,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
     const container = containerRef.current;
     const track = trackRef.current;
     if (!container || !track) return;
+    if (window.matchMedia('(max-width: 1023px)').matches) return;
 
     const ctx = gsap.context(() => {
       // Horizontal Scroll Animation:
@@ -164,22 +165,22 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
       ref={containerRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="relative w-full h-[100dvh] min-h-[100dvh] overflow-hidden bg-transparent select-none"
+      className="relative w-full h-auto min-h-[100dvh] lg:h-[100dvh] lg:min-h-[100dvh] overflow-hidden lg:overflow-visible bg-transparent select-none"
     >
       {/* Horizontal Sliding Track (Scrolls Left on Scroll Down, Scrolls Right on Scroll Up) */}
       <div
         ref={trackRef}
         id="horizontal-scroll-track"
-        className="flex flex-row flex-nowrap h-full w-[700vw] will-change-transform bg-transparent"
+        className="flex flex-col lg:flex-row flex-nowrap h-auto lg:h-full w-full lg:w-[700vw] will-change-transform bg-transparent"
         style={{ width: `${totalCards * 100}vw` }}
       >
         {/* SLIDE 0: HERO */}
         <div
           ref={(el) => (slidesRef.current[0] = el)}
           id="slide-0-hero"
-          className="w-screen h-full min-h-[100dvh] flex flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
+          className="w-full lg:w-screen h-auto lg:h-full min-h-[70dvh] lg:min-h-[100dvh] flex flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
         >
-          <div className="slide-inner-content w-full h-full overflow-y-auto lg:overflow-visible flex flex-col justify-center pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-16 lg:pb-8 overscroll-contain bg-transparent">
+          <div className="slide-inner-content w-full h-auto lg:h-full overflow-visible lg:overflow-visible flex flex-col justify-center pt-16 pb-10 sm:pt-20 sm:pb-16 lg:pt-16 lg:pb-8 overscroll-contain bg-transparent">
             <Hero
               onOpenLimitedOffer={onOpenLimitedOffer}
               onOpenAnalyzer={onOpenAnalyzer}
@@ -192,7 +193,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
         <div
           ref={(el) => (slidesRef.current[1] = el)}
           id="slide-1-services"
-          className="w-screen h-full min-h-[100dvh] flex flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
+          className="hidden lg:flex w-screen h-full min-h-[100dvh] flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
         >
           <div className="slide-inner-content w-full h-full overflow-y-auto lg:overflow-visible flex flex-col justify-center pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-16 lg:pb-8 overscroll-contain bg-transparent">
             <ServicesSection
@@ -209,7 +210,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
         <div
           ref={(el) => (slidesRef.current[2] = el)}
           id="slide-2-metrics"
-          className="w-screen h-full min-h-[100dvh] flex flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
+          className="hidden lg:flex w-screen h-full min-h-[100dvh] flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
         >
           <div className="slide-inner-content w-full h-full overflow-y-auto lg:overflow-visible flex flex-col justify-center pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-16 lg:pb-8 overscroll-contain bg-transparent">
             <MetricsSection
@@ -223,7 +224,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
         <div
           ref={(el) => (slidesRef.current[3] = el)}
           id="slide-3-about"
-          className="w-screen h-full min-h-[100dvh] flex flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
+          className="hidden lg:flex w-screen h-full min-h-[100dvh] flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
         >
           <div className="slide-inner-content w-full h-full overflow-y-auto lg:overflow-visible flex flex-col justify-center pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-16 lg:pb-8 overscroll-contain bg-transparent">
             <AboutSection
@@ -237,7 +238,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
         <div
           ref={(el) => (slidesRef.current[4] = el)}
           id="slide-4-testimonials"
-          className="w-screen h-full min-h-[100dvh] flex flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
+          className="hidden lg:flex w-screen h-full min-h-[100dvh] flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
         >
           <div className="slide-inner-content w-full h-full overflow-y-auto lg:overflow-visible flex flex-col justify-center pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-16 lg:pb-8 overscroll-contain bg-transparent">
             <TestimonialsSection />
@@ -248,7 +249,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
         <div
           ref={(el) => (slidesRef.current[5] = el)}
           id="slide-5-techstack"
-          className="w-screen h-full min-h-[100dvh] flex flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
+          className="hidden lg:flex w-screen h-full min-h-[100dvh] flex-col justify-center shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
         >
           <div className="slide-inner-content w-full h-full overflow-y-auto lg:overflow-visible flex flex-col justify-center pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-16 lg:pb-8 overscroll-contain bg-transparent">
             <TechStackSection />
@@ -259,9 +260,9 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
         <div
           ref={(el) => (slidesRef.current[6] = el)}
           id="slide-6-contact"
-          className="w-screen h-full min-h-[100dvh] flex flex-col justify-start shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
+          className="w-full lg:w-screen h-auto lg:h-full min-h-[100dvh] flex flex-col justify-start shrink-0 bg-transparent px-3 sm:px-6 md:px-10 lg:px-16"
         >
-          <div className="slide-inner-content w-full h-full overflow-y-auto flex flex-col justify-between pt-20 pb-16 overscroll-contain bg-transparent">
+          <div className="slide-inner-content w-full h-auto lg:h-full overflow-visible lg:overflow-y-auto flex flex-col justify-between pt-12 pb-10 lg:pt-20 lg:pb-16 overscroll-contain bg-transparent">
             <ContactSection selectedServicePreload={selectedServicePreload} />
             <Footer
               onOpenLimitedOffer={onOpenLimitedOffer}
@@ -315,7 +316,7 @@ export const CinematicCardDeck: React.FC<CinematicCardDeckProps> = ({
       {/* Floating Compact Slide Indicator for Mobile / Tablet */}
       <div
         id="mobile-deck-nav-indicator"
-        className="flex lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 items-center gap-1.5 pointer-events-auto"
+        className="hidden"
       >
         <div className="glass-panel-luxury px-3 py-1.5 rounded-full border border-amber-500/40 flex items-center gap-2 shadow-2xl backdrop-blur-md bg-black/70">
           <button

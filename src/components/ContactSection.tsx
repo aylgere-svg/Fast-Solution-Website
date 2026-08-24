@@ -55,7 +55,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     setErrorMessage('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.email.trim()) {
       setErrorMessage('Please provide your name and email address.');
@@ -64,9 +64,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
     setIsSubmitting(true);
 
-    // Save directly to SharePoint List
     try {
-      recordPublicInquiryToSharePoint({
+      await recordPublicInquiryToSharePoint({
         title: `${formData.service} Inquiry - ${formData.name}`,
         clientName: formData.name,
         email: formData.email,
@@ -76,23 +75,24 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
         source: 'Website Contact Form',
         estimatedValue: 5000,
       });
-    } catch (err) {}
-
-    // Simulate reliable dispatch
-    setTimeout(() => {
+    } catch (err) {
       setIsSubmitting(false);
-      setIsSubmitted(true);
-      try {
-        confetti({
-          particleCount: 90,
-          spread: 70,
-          origin: { y: 0.7 },
-          colors: ['#f59e0b', '#ea580c', '#d97706', '#fbbf24'],
-        });
-      } catch (err) {
-        // Safe fallback if confetti isn't available
-      }
-    }, 900);
+      setErrorMessage(err instanceof Error ? err.message : 'Unable to submit your inquiry.');
+      return;
+    }
+
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+    try {
+      confetti({
+        particleCount: 90,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ['#f59e0b', '#ea580c', '#d97706', '#fbbf24'],
+      });
+    } catch (err) {
+      // Safe fallback if confetti isn't available
+    }
   };
 
   const handleReset = () => {
@@ -108,13 +108,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   };
 
   return (
-    <section id="contact" className="pt-6 pb-12 md:pt-10 md:pb-16 relative bg-transparent">
+    <section id="contact" className="pt-4 pb-8 md:pt-10 md:pb-16 relative bg-transparent">
       {/* Background ambient lighting */}
       <div className="absolute top-1/3 right-10 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* Section Header: "CONTACT" | Subtitle: "Let’s Work Together" */}
-        <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
+        <div className="text-center max-w-3xl mx-auto mb-5 md:mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/80 border border-amber-600/40 text-amber-300 text-xs font-bold tracking-widest uppercase mb-4">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>CONTACT</span>
@@ -122,21 +122,21 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
           <h2
             id="contact-subtitle"
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight font-['Space_Grotesk',sans-serif]"
+            className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight font-['Space_Grotesk',sans-serif]"
           >
             Let’s Work{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200">
               Together
             </span>
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-slate-300">
+          <p className="hidden sm:block mt-4 text-base sm:text-lg text-slate-300">
             Tell us about your business goals and current bottlenecks. We’ll design your custom setup.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start pb-8">
           {/* Left Column: Direct Contact Info & Guarantees */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="hidden lg:block lg:col-span-5 space-y-6">
             <div className="glass-panel-luxury rounded-2xl p-6 sm:p-8 border border-amber-500/20">
               <h3 className="text-xl font-bold text-white font-['Space_Grotesk',sans-serif] mb-6">
                 Get in Touch Directly
@@ -263,8 +263,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           </div>
 
           {/* Right Column: Interactive Consultation & Project Form */}
-          <div className="lg:col-span-7">
-            <div className="glass-panel-luxury rounded-2xl p-7 sm:p-10 border border-amber-500/30 shadow-2xl relative">
+          <div className="lg:col-span-7 lg:col-start-6">
+            <div className="glass-panel-luxury rounded-2xl p-4 sm:p-10 border border-amber-500/30 shadow-2xl relative">
               {isSubmitted ? (
                 <div className="text-center py-10 space-y-5 animate-in fade-in zoom-in-95 duration-300">
                   <div className="w-16 h-16 rounded-2xl bg-amber-950/80 border border-amber-500 text-amber-300 flex items-center justify-center mx-auto shadow-lg shadow-orange-900/40">
@@ -287,11 +287,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} id="contact-form" className="space-y-5">
-                  <div className="flex items-center justify-between pb-4 border-b border-amber-950/60">
-                    <h3 className="text-xl font-bold text-white font-['Space_Grotesk',sans-serif]">
+                  <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-amber-950/60">
+                    <h3 className="text-lg sm:text-xl font-bold text-white font-['Space_Grotesk',sans-serif]">
                       Request a Custom Quote or Audit
                     </h3>
-                    <span className="text-[11px] text-amber-400 font-medium">
+                    <span className="hidden sm:inline text-[11px] text-amber-400 font-medium">
                       No commitment required
                     </span>
                   </div>

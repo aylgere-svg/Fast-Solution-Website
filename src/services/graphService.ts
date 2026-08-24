@@ -376,7 +376,7 @@ export const saveLocalListItems = (listId: string, items: SharePointItem[]) => {
 };
 
 // Push a new submission from public website into SharePoint Leads list
-export const recordPublicInquiryToSharePoint = (data: {
+export const recordPublicInquiryToSharePoint = async (data: {
   title: string;
   clientName: string;
   email: string;
@@ -385,39 +385,19 @@ export const recordPublicInquiryToSharePoint = (data: {
   notes?: string;
   source?: string;
   estimatedValue?: number;
-}) => {
-  const listId = 'd4810f92-721a-4c28-9844-38b47120a402'; // Leads & Inquiries
-  const items = getLocalListItems(listId);
-  const newItem: SharePointItem = {
-    id: 'sp-item-' + Date.now().toString(36),
-    createdDateTime: new Date().toISOString(),
-    lastModifiedDateTime: new Date().toISOString(),
-    fields: {
-      Title: data.title || 'New Web Inquiry',
-      ClientName: data.clientName || 'Anonymous Client',
-      Email: data.email || '',
-      Phone: data.phone || '',
-      Service: data.service || 'General Inquiry',
-      Status: 'New',
-      Priority: 'High',
-      EstimatedValue: data.estimatedValue || 2500,
-      Source: data.source || 'Website Contact Form',
-      Notes: data.notes || '',
-    },
-  };
-  saveLocalListItems(listId, [newItem, ...items]);
-
-  addGraphLog({
+}): Promise<SharePointItem> => {
+  const response = await fetch('/api/contact-submission', {
     method: 'POST',
-    endpoint: `https://graph.microsoft.com/v1.0/sites/${DEFAULT_SHAREPOINT_CONFIG.siteId}/lists/${listId}/items`,
-    status: 201,
-    statusText: 'Created (SharePoint Webhook)',
-    durationMs: 42,
-    requestBody: { fields: newItem.fields },
-    responseBody: { id: newItem.id, fields: newItem.fields },
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
   });
 
-  return newItem;
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.error || 'Unable to save your inquiry to SharePoint.');
+  }
+
+  return result.item as SharePointItem;
 };
 
 // SharePoint Engine: Fetch items for a SharePoint List Location

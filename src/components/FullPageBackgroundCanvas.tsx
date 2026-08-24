@@ -26,7 +26,7 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Balanced 70% Transparency Clarity (30% subtle dark overlay for optimal contrast)
-  const overlayDarkness = 30;
+  const overlayDarkness = 10;
 
   // Reliable URL retriever
   const getFrameUrl = useCallback(
@@ -215,14 +215,20 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
     <div
       id="fullpage-background-canvas-wrapper"
       className="fixed inset-0 w-full h-full min-h-[100dvh] pointer-events-none z-0 overflow-hidden select-none bg-[#0a0c10]"
+      style={{
+        backgroundImage: `url(${firstFrameUrl})`,
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+      }}
       aria-hidden="true"
     >
       {/* 1. Instant Hardware Fallback Image Layer with HD Crisp Boost */}
       <img
         id="background-frame-img-fallback"
         src={currentFrameUrl}
-        alt="Laptop Sequence Frame"
-        className={`absolute inset-0 w-full h-full min-h-[100dvh] object-cover transition-opacity duration-200 contrast-[1.08] brightness-[1.02] saturate-[1.06] ${
+        alt=""
+        className={`absolute inset-0 z-0 w-full h-full min-h-[100dvh] object-cover transition-opacity duration-200 contrast-[1.08] brightness-[1.02] saturate-[1.06] ${
           isLoaded ? 'opacity-100' : 'opacity-90'
         }`}
         style={{
@@ -240,7 +246,7 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
       {/* 2. High-DPI Canvas with HD Crisp Boost (Renders Rotating Frame Sequence) */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full min-h-[100dvh] object-cover contrast-[1.08] brightness-[1.02] saturate-[1.06]"
+        className="absolute inset-0 z-0 w-full h-full min-h-[100dvh] object-cover contrast-[1.08] brightness-[1.02] saturate-[1.06]"
         style={{
           width: '100vw',
           height: '100vh',
