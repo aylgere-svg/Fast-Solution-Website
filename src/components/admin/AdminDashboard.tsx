@@ -142,15 +142,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   // New item form state
   const [newItemFields, setNewItemFields] = useState<Record<string, any>>({
     Title: '',
-    ClientName: '',
-    Email: '',
-    Phone: '',
-    Service: 'AI & Automation Solutions',
-    Status: 'New',
-    Priority: 'Medium',
-    EstimatedValue: 5000,
-    Source: 'Admin Portal',
-    Notes: '',
+    Company: '',
+    BusinessEmail: '',
+    PhoneNumber: '',
+    Interest: '',
+    ProjectDetails: '',
   });
 
   // Diagnostics
@@ -226,20 +222,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
       const matchesSearch =
         !searchQuery.trim() ||
         String(fields.Title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(fields.ClientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(fields.Email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(fields.Service || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(fields.Notes || '').toLowerCase().includes(searchQuery.toLowerCase());
+        String(fields.Company || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(fields.BusinessEmail || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(fields.PhoneNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(fields.Interest || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(fields.ProjectDetails || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus =
-        statusFilter === 'ALL' || String(fields.Status || '').toUpperCase() === statusFilter.toUpperCase();
-
-      const matchesPriority =
-        priorityFilter === 'ALL' || String(fields.Priority || '').toUpperCase() === priorityFilter.toUpperCase();
-
-      return matchesSearch && matchesStatus && matchesPriority;
+      return matchesSearch;
     });
-  }, [items, searchQuery, statusFilter, priorityFilter]);
+  }, [items, searchQuery]);
 
   // Total Estimated Pipeline
   const totalPipelineValue = useMemo(() => {
@@ -449,15 +440,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
       // Reset form
       setNewItemFields({
         Title: '',
-        ClientName: '',
-        Email: '',
-        Phone: '',
-        Service: 'AI & Automation Solutions',
-        Status: 'New',
-        Priority: 'Medium',
-        EstimatedValue: 5000,
-        Source: 'Admin Portal',
-        Notes: '',
+        Company: '',
+        BusinessEmail: '',
+        PhoneNumber: '',
+        Interest: '',
+        ProjectDetails: '',
       });
       await loadItems(selectedListId);
     } catch (err) {
@@ -500,7 +487,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   // Export CSV
   const handleExportCSV = () => {
     if (items.length === 0) return;
-    const headers = ['ID', 'Title', 'ClientName', 'Email', 'Phone', 'Service', 'Status', 'Priority', 'EstimatedValue', 'Source', 'Notes', 'Created'];
+    const headers = ['ID', 'Title', 'Company', 'BusinessEmail', 'PhoneNumber', 'Interest', 'ProjectDetails', 'Created'];
     const csvRows = [headers.join(',')];
 
     items.forEach((it) => {
@@ -508,15 +495,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
       const row = [
         `"${it.id}"`,
         `"${(f.Title || '').replace(/"/g, '""')}"`,
-        `"${(f.ClientName || '').replace(/"/g, '""')}"`,
-        `"${(f.Email || '').replace(/"/g, '""')}"`,
-        `"${(f.Phone || '').replace(/"/g, '""')}"`,
-        `"${(f.Service || '').replace(/"/g, '""')}"`,
-        `"${(f.Status || '').replace(/"/g, '""')}"`,
-        `"${(f.Priority || '').replace(/"/g, '""')}"`,
-        `"${f.EstimatedValue || 0}"`,
-        `"${(f.Source || '').replace(/"/g, '""')}"`,
-        `"${(f.Notes || '').replace(/"/g, '""')}"`,
+        `"${(f.Company || '').replace(/"/g, '""')}"`,
+        `"${(f.BusinessEmail || '').replace(/"/g, '""')}"`,
+        `"${(f.PhoneNumber || '').replace(/"/g, '""')}"`,
+        `"${(f.Interest || '').replace(/"/g, '""')}"`,
+        `"${(f.ProjectDetails || '').replace(/"/g, '""')}"`,
         `"${it.createdDateTime}"`,
       ];
       csvRows.push(row.join(','));
@@ -1025,7 +1008,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
       {/* Main Content Area */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {/* KPI & Connection Status Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="p-4 rounded-xl bg-[#0e111a]/80 border border-amber-900/30">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               Connected SharePoint List
@@ -1047,7 +1030,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
               <span className="text-xs font-normal text-emerald-400">Rows in Graph</span>
             </div>
             <div className="text-xs text-slate-400 mt-0.5">
-              {filteredItems.length} matching active filters
+              {filteredItems.length} matching search
             </div>
           </div>
 
@@ -1141,37 +1124,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-slate-400 whitespace-nowrap">Status:</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-amber-900/40 text-white text-xs focus:outline-none focus:border-amber-500"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="NEW">New</option>
-                  <option value="IN PROGRESS">In Progress</option>
-                  <option value="CONTACTED">Contacted</option>
-                  <option value="QUALIFIED">Qualified</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="ARCHIVED">Archived</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-slate-400 whitespace-nowrap">Priority:</label>
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-amber-900/40 text-white text-xs focus:outline-none focus:border-amber-500"
-                >
-                  <option value="ALL">All Priorities</option>
-                  <option value="URGENT">Urgent</option>
-                  <option value="HIGH">High</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LOW">Low</option>
-                </select>
-              </div>
             </div>
 
             {/* SharePoint Table Data Grid */}
@@ -1180,20 +1132,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-[#12151f] border-b border-amber-900/40 text-slate-400 font-semibold uppercase tracking-wider">
-                      <th className="py-3 px-4">Item ID / Title</th>
-                      <th className="py-3 px-4">Client Contact</th>
-                      <th className="py-3 px-4">Service Scope</th>
-                      <th className="py-3 px-4">Pipeline Status</th>
-                      <th className="py-3 px-4">Priority</th>
-                      <th className="py-3 px-4">Est. Value</th>
-                      <th className="py-3 px-4">Source Channel</th>
+                      <th className="py-3 px-4">Title</th>
+                      <th className="py-3 px-4">Company</th>
+                      <th className="py-3 px-4">BusinessEmail</th>
+                      <th className="py-3 px-4">PhoneNumber</th>
+                      <th className="py-3 px-4">Interest</th>
+                      <th className="py-3 px-4">ProjectDetails</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-950/40">
                     {filteredItems.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-400">
+                        <td colSpan={7} className="py-12 text-center text-slate-400">
                           <Database className="w-8 h-8 text-amber-500/40 mx-auto mb-2" />
                           <p className="text-sm font-semibold text-slate-300">No SharePoint list items found</p>
                           <p className="text-xs text-slate-500 mt-1">Try adjusting your search criteria or click "Add Row to SharePoint"</p>
@@ -1202,9 +1153,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                     ) : (
                       filteredItems.map((item) => {
                         const f = item.fields || {};
-                        const status = f.Status || 'New';
-                        const priority = f.Priority || 'Medium';
-
                         return (
                           <tr
                             key={item.id}
@@ -1222,65 +1170,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                             <td className="py-3.5 px-4">
                               <div className="font-semibold text-slate-200 flex items-center gap-1.5">
                                 <User className="w-3 h-3 text-amber-400" />
-                                {f.ClientName || 'N/A'}
+                                {f.Company || 'N/A'}
                               </div>
-                              {f.Email && (
+                              {f.BusinessEmail && (
                                 <a
-                                  href={`mailto:${f.Email}`}
+                                  href={`mailto:${f.BusinessEmail}`}
                                   className="text-[11px] text-slate-400 hover:text-amber-300 flex items-center gap-1 mt-0.5"
                                 >
                                   <Mail className="w-2.5 h-2.5" />
-                                  {f.Email}
+                                  {f.BusinessEmail}
                                 </a>
                               )}
                             </td>
 
                             <td className="py-3.5 px-4">
-                              <span className="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700 text-slate-300 text-[11px]">
-                                {f.Service || 'Custom Solution'}
-                              </span>
+                              {f.PhoneNumber || '—'}
                             </td>
 
                             <td className="py-3.5 px-4">
-                              <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 ${
-                                  status === 'New'
-                                    ? 'bg-blue-950 text-blue-300 border border-blue-800/50'
-                                    : status === 'Qualified'
-                                    ? 'bg-purple-950 text-purple-300 border border-purple-800/50'
-                                    : status === 'In Progress'
-                                    ? 'bg-amber-950 text-amber-300 border border-amber-800/50'
-                                    : status === 'Completed'
-                                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/50'
-                                    : 'bg-slate-900 text-slate-400 border border-slate-800'
-                                }`}
-                              >
-                                {status}
-                              </span>
+                              {f.Interest || '—'}
                             </td>
 
-                            <td className="py-3.5 px-4">
-                              <span
-                                className={`text-[11px] font-bold ${
-                                  priority === 'Urgent'
-                                    ? 'text-red-400'
-                                    : priority === 'High'
-                                    ? 'text-orange-400'
-                                    : priority === 'Medium'
-                                    ? 'text-amber-400'
-                                    : 'text-slate-400'
-                                }`}
-                              >
-                                ● {priority}
-                              </span>
-                            </td>
-
-                            <td className="py-3.5 px-4 font-mono font-bold text-amber-300">
-                              {f.EstimatedValue ? `$${Number(f.EstimatedValue).toLocaleString()}` : '—'}
-                            </td>
-
-                            <td className="py-3.5 px-4 text-slate-400 text-[11px]">
-                              {f.Source || 'Web Inquiry'}
+                            <td className="py-3.5 px-4 text-slate-400 text-[11px] max-w-xs">
+                              {f.ProjectDetails || '—'}
                             </td>
 
                             <td className="py-3.5 px-4 text-right">
@@ -2177,21 +2089,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Client Name</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Company</label>
                   <input
                     type="text"
-                    value={newItemFields.ClientName}
-                    onChange={(e) => setNewItemFields({ ...newItemFields, ClientName: e.target.value })}
+                    value={newItemFields.Company}
+                    onChange={(e) => setNewItemFields({ ...newItemFields, Company: e.target.value })}
                     placeholder="e.g. Marcus Vance"
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Client Email</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">BusinessEmail</label>
                   <input
                     type="email"
-                    value={newItemFields.Email}
-                    onChange={(e) => setNewItemFields({ ...newItemFields, Email: e.target.value })}
+                    value={newItemFields.BusinessEmail}
+                    onChange={(e) => setNewItemFields({ ...newItemFields, BusinessEmail: e.target.value })}
                     placeholder="m.vance@company.com"
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none focus:border-amber-500"
                   />
@@ -2200,63 +2112,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Status</label>
-                  <select
-                    value={newItemFields.Status}
-                    onChange={(e) => setNewItemFields({ ...newItemFields, Status: e.target.value })}
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">PhoneNumber</label>
+                  <input
+                    type="text"
+                    value={newItemFields.PhoneNumber}
+                    onChange={(e) => setNewItemFields({ ...newItemFields, PhoneNumber: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
-                  >
-                    <option value="New">New</option>
-                    <option value="Qualified">Qualified</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Contacted">Contacted</option>
-                    <option value="Completed">Completed</option>
-                  </select>
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Priority</label>
-                  <select
-                    value={newItemFields.Priority}
-                    onChange={(e) => setNewItemFields({ ...newItemFields, Priority: e.target.value })}
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Interest</label>
+                  <input
+                    type="text"
+                    value={newItemFields.Interest}
+                    onChange={(e) => setNewItemFields({ ...newItemFields, Interest: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Urgent">Urgent</option>
-                  </select>
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Estimated Value ($)</label>
-                  <input
-                    type="number"
-                    value={newItemFields.EstimatedValue}
-                    onChange={(e) => setNewItemFields({ ...newItemFields, EstimatedValue: Number(e.target.value) })}
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">ProjectDetails</label>
+                  <textarea
+                    rows={2}
+                    value={newItemFields.ProjectDetails}
+                    onChange={(e) => setNewItemFields({ ...newItemFields, ProjectDetails: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Service Scope</label>
-                  <input
-                    type="text"
-                    value={newItemFields.Service}
-                    onChange={(e) => setNewItemFields({ ...newItemFields, Service: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Notes / Scope Summary</label>
-                <textarea
-                  rows={2}
-                  value={newItemFields.Notes}
-                  onChange={(e) => setNewItemFields({ ...newItemFields, Notes: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
-                />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -2313,28 +2197,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Client Name</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Company</label>
                   <input
                     type="text"
-                    value={editingItem.fields.ClientName || ''}
+                    value={editingItem.fields.Company || ''}
                     onChange={(e) =>
                       setEditingItem({
                         ...editingItem,
-                        fields: { ...editingItem.fields, ClientName: e.target.value },
+                        fields: { ...editingItem.fields, Company: e.target.value },
                       })
                     }
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">BusinessEmail</label>
                   <input
                     type="email"
-                    value={editingItem.fields.Email || ''}
+                    value={editingItem.fields.BusinessEmail || ''}
                     onChange={(e) =>
                       setEditingItem({
                         ...editingItem,
-                        fields: { ...editingItem.fields, Email: e.target.value },
+                        fields: { ...editingItem.fields, BusinessEmail: e.target.value },
                       })
                     }
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
@@ -2344,69 +2228,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Status</label>
-                  <select
-                    value={editingItem.fields.Status || 'New'}
-                    onChange={(e) =>
-                      setEditingItem({
-                        ...editingItem,
-                        fields: { ...editingItem.fields, Status: e.target.value as any },
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
-                  >
-                    <option value="New">New</option>
-                    <option value="Qualified">Qualified</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Contacted">Contacted</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Archived">Archived</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Priority</label>
-                  <select
-                    value={editingItem.fields.Priority || 'Medium'}
-                    onChange={(e) =>
-                      setEditingItem({
-                        ...editingItem,
-                        fields: { ...editingItem.fields, Priority: e.target.value as any },
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Urgent">Urgent</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Estimated Value ($)</label>
-                  <input
-                    type="number"
-                    value={editingItem.fields.EstimatedValue || 0}
-                    onChange={(e) =>
-                      setEditingItem({
-                        ...editingItem,
-                        fields: { ...editingItem.fields, EstimatedValue: Number(e.target.value) },
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Service Scope</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">PhoneNumber</label>
                   <input
                     type="text"
-                    value={editingItem.fields.Service || ''}
+                    value={editingItem.fields.PhoneNumber || ''}
                     onChange={(e) =>
                       setEditingItem({
                         ...editingItem,
-                        fields: { ...editingItem.fields, Service: e.target.value },
+                        fields: { ...editingItem.fields, PhoneNumber: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Interest</label>
+                  <input
+                    type="text"
+                    value={editingItem.fields.Interest || ''}
+                    onChange={(e) =>
+                      setEditingItem({
+                        ...editingItem,
+                        fields: { ...editingItem.fields, Interest: e.target.value },
                       })
                     }
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"
@@ -2415,14 +2258,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Notes</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">ProjectDetails</label>
                 <textarea
                   rows={2}
-                  value={editingItem.fields.Notes || ''}
+                  value={editingItem.fields.ProjectDetails || ''}
                   onChange={(e) =>
                     setEditingItem({
                       ...editingItem,
-                      fields: { ...editingItem.fields, Notes: e.target.value },
+                      fields: { ...editingItem.fields, ProjectDetails: e.target.value },
                     })
                   }
                   className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-900/50 text-white text-xs focus:outline-none"

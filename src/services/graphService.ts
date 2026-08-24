@@ -42,24 +42,20 @@ export const DEFAULT_SHAREPOINT_CONFIG: SharePointConfig = {
 export const INITIAL_SHAREPOINT_LISTS: SharePointList[] = [
   {
     id: 'd4810f92-721a-4c28-9844-38b47120a402',
-    name: 'Leads_and_Inquiries',
-    displayName: 'Client Leads & Inquiries',
-    description: 'Primary customer inquiries, contact submissions, and automated process analyzer leads.',
+    name: 'Contact',
+    displayName: 'Contact',
+    description: 'Website contact submissions from the SharePoint Contact list.',
     locationUrl: 'https://fassolutions.sharepoint.com/sites/FASMainS/Lists/ClientLeads',
     siteUrl: 'https://fassolutions.sharepoint.com/sites/FASMainS',
-    itemsCount: 6,
+    itemsCount: 0,
     lastModifiedDateTime: new Date().toISOString(),
     columns: [
-      { name: 'Title', displayName: 'Inquiry Subject', type: 'text', required: true },
-      { name: 'ClientName', displayName: 'Client Name', type: 'text', required: true },
-      { name: 'Email', displayName: 'Email Address', type: 'text', required: true },
-      { name: 'Phone', displayName: 'Phone Number', type: 'text' },
-      { name: 'Service', displayName: 'Service Requested', type: 'choice', choices: ['AI & Automation Solutions', 'Custom Business Applications', 'Web & Digital Platforms', 'Consulting & IT Advisory', 'Complete Custom Suite'] },
-      { name: 'Status', displayName: 'Pipeline Status', type: 'choice', choices: ['New', 'In Progress', 'Contacted', 'Qualified', 'Completed', 'Archived'] },
-      { name: 'Priority', displayName: 'Priority', type: 'choice', choices: ['Low', 'Medium', 'High', 'Urgent'] },
-      { name: 'EstimatedValue', displayName: 'Est. Value ($)', type: 'currency' },
-      { name: 'Source', displayName: 'Source Channel', type: 'choice', choices: ['Website Contact Form', 'Process Analyzer', 'Limited Offer $1k Credit', 'Outlook Booking', 'Referral'] },
-      { name: 'Notes', displayName: 'Project Notes', type: 'note' },
+      { name: 'Title', displayName: 'Title', type: 'text', required: true },
+      { name: 'Company', displayName: 'Company', type: 'text' },
+      { name: 'BusinessEmail', displayName: 'BusinessEmail', type: 'text' },
+      { name: 'PhoneNumber', displayName: 'PhoneNumber', type: 'text' },
+      { name: 'Interest', displayName: 'Interest', type: 'text' },
+      { name: 'ProjectDetails', displayName: 'ProjectDetails', type: 'note' },
     ],
   },
   {
@@ -414,13 +410,15 @@ const getGraphListUrl = (config: SharePointConfig, listId: string) => {
 
     if (site.includes('/') && !site.includes(':/')) {
       const parts = site.split('/');
-      site = `${parts[0]}:/${parts.slice(1).join('/')}:`;
+      site = `${parts[0]}:/${parts.slice(1).join('/')}`;
     }
   }
 
   if (site.includes('graph.microsoft.com')) {
       return `${site}/lists/${listId}/items`;
   }
+
+  site = site.replace(/:$/, '');
   
   return `https://graph.microsoft.com/v1.0/sites/${site}/lists/${listId}/items`;
 };
@@ -437,7 +435,7 @@ export const fetchSharePointItemsViaGraph = async (
 
   if (config.authMode === 'azure_app_registration') {
     try {
-      const response = await fetch(`/api/contact-submission?listId=${encodeURIComponent(listId)}`);
+      const response = await fetch('/api/sharepoint-contact-list');
       const data = await response.json().catch(() => ({}));
       if (response.ok && Array.isArray(data.items)) {
         const items = data.items as SharePointItem[];
@@ -455,7 +453,7 @@ export const fetchSharePointItemsViaGraph = async (
   }
 
   // Real Microsoft Graph API logic
-  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+  if (config.authMode !== 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
     try {
       const graphUrl = getGraphListUrl(config, listId) + '?expand=fields';
       const response = await fetch(graphUrl, {

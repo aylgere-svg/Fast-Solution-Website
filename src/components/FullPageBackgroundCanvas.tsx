@@ -86,10 +86,11 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
       const imgWidth = img.naturalWidth;
       const imgHeight = img.naturalHeight;
 
-      // Responsive cover calculation that keeps the rotating laptop centered on all screens
+      // Fit the frame inside phone screens so the full subject remains visible.
       const hRatio = width / imgWidth;
       const vRatio = height / imgHeight;
-      const ratio = Math.max(hRatio, vRatio);
+      const isPhone = window.matchMedia('(max-width: 767px)').matches;
+      const ratio = isPhone ? Math.min(hRatio, vRatio) * 0.88 : Math.max(hRatio, vRatio);
 
       const drawWidth = imgWidth * ratio;
       const drawHeight = imgHeight * ratio;
@@ -228,7 +229,7 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
         id="background-frame-img-fallback"
         src={currentFrameUrl}
         alt=""
-        className={`absolute inset-0 z-0 w-full h-full min-h-[100dvh] object-cover transition-opacity duration-200 contrast-[1.08] brightness-[1.02] saturate-[1.06] ${
+        className={`absolute inset-0 z-0 w-full h-full min-h-[100dvh] object-contain md:object-cover transition-opacity duration-200 contrast-[1.08] brightness-[1.02] saturate-[1.06] ${
           isLoaded ? 'opacity-100' : 'opacity-90'
         }`}
         style={{
@@ -246,7 +247,7 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
       {/* 2. High-DPI Canvas with HD Crisp Boost (Renders Rotating Frame Sequence) */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 z-0 w-full h-full min-h-[100dvh] object-cover contrast-[1.08] brightness-[1.02] saturate-[1.06]"
+        className="absolute inset-0 z-0 w-full h-full min-h-[100dvh] object-contain md:object-cover contrast-[1.08] brightness-[1.02] saturate-[1.06]"
         style={{
           width: '100vw',
           height: '100vh',

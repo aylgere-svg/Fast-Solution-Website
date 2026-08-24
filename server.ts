@@ -11,8 +11,8 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true }));
 
   // API routes
-  app.get('/api/contact-submission', async (req, res) => {
-    const listId = String(req.query.listId || process.env.SHAREPOINT_LIST_ID || '').trim();
+  app.get('/api/sharepoint-contact-list', async (req, res) => {
+    const listId = String(process.env.SHAREPOINT_LIST_ID || '').trim();
     const { SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, SHAREPOINT_CLIENT_SECRET, SHAREPOINT_SITE_ID } = process.env;
     if (!listId || !SHAREPOINT_TENANT_ID || !SHAREPOINT_CLIENT_ID || !SHAREPOINT_CLIENT_SECRET || !SHAREPOINT_SITE_ID) {
       return res.status(503).json({ error: 'SharePoint connection is not configured on the server.' });
@@ -53,7 +53,9 @@ async function startServer() {
       });
       const itemsData = await itemsResponse.json().catch(() => ({}));
       if (!itemsResponse.ok) {
-        return res.status(502).json({ error: `Microsoft Graph returned HTTP ${itemsResponse.status}.` });
+        return res.status(502).json({
+          error: `Microsoft Graph returned HTTP ${itemsResponse.status}: ${itemsData?.error?.message || 'Check the SharePoint site and contact list IDs.'}`,
+        });
       }
       return res.json({ items: (itemsData.value || []).map((item: any) => ({
         id: String(item.id),
