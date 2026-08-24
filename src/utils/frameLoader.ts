@@ -1,11 +1,15 @@
 /// <reference types="vite/client" />
 
-// Load all frames reliably using Vite's eager asset glob import
-const frameModules: Record<string, { default: string } | string> = (
-  import.meta as any
-).glob('../assets/frames/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', {
+import firstFrameUrl from '../../ezgif-frame-001.jpg?url';
+
+// Import the intact root-level image sequence as build-time URLs.
+const frameModules = import.meta.glob<string>('../../ezgif-frame-*.jpg', {
   eager: true,
+  import: 'default',
+  query: '?url',
 });
+
+export {firstFrameUrl};
 
 // Sort frames numerically by frame number
 export const frameUrls: string[] = Object.keys(frameModules)
@@ -15,23 +19,21 @@ export const frameUrls: string[] = Object.keys(frameModules)
     return numA - numB;
   })
   .map((key) => {
-    const mod = frameModules[key];
-    if (typeof mod === 'string') return mod;
-    return mod?.default || '';
+    return frameModules[key];
   })
   .filter(Boolean);
 
-// Fallback generator with base URL support for Git / GitHub Pages / Subpath deployments
+// Fallback generator with base URL support for Git / GitHub Pages / Subpath deployments.
 export const getFallbackFrameUrl = (frameNum: number): string => {
   const padded = Math.min(Math.max(1, frameNum), 100)
     .toString()
     .padStart(3, '0');
-  
-  if (frameUrls && frameUrls[frameNum - 1]) {
+
+  // The working source images live outside the corrupted frames directories.
+  if (frameUrls[frameNum - 1]) {
     return frameUrls[frameNum - 1];
   }
 
-  // Ensure compatibility with subpath deployments (e.g., https://username.github.io/repo-name/)
   const rawBase = import.meta.env.BASE_URL || './';
   const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
   return `${base}ezgif-frame-${padded}.jpg`;

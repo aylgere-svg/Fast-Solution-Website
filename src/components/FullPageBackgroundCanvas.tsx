@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { frameUrls, getFallbackFrameUrl } from '../utils/frameLoader';
+import { frameUrls, firstFrameUrl, getFallbackFrameUrl } from '../utils/frameLoader';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -21,7 +21,7 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
   const animFrameIdRef = useRef<number | null>(null);
 
   // Initial frame URL
-  const initialUrl = frameUrls[0] || getFallbackFrameUrl(1);
+  const initialUrl = firstFrameUrl;
   const [currentFrameUrl, setCurrentFrameUrl] = useState<string>(initialUrl);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
@@ -229,6 +229,11 @@ export const FullPageBackgroundCanvas: React.FC<FullPageBackgroundCanvasProps> =
           width: '100vw',
           height: '100vh',
           objectPosition: 'center center',
+        }}
+        onLoad={() => setIsLoaded(true)}
+        onError={(event) => {
+          event.currentTarget.style.display = 'none';
+          setCurrentFrameUrl(firstFrameUrl);
         }}
       />
 
