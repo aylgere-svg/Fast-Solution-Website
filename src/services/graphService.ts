@@ -386,7 +386,10 @@ export const recordPublicInquiryToSharePoint = async (data: {
   source?: string;
   estimatedValue?: number;
 }): Promise<SharePointItem> => {
-  const response = await fetch('/api/contact-submission', {
+  const endpoint = import.meta.env.PROD
+    ? `${import.meta.env.BASE_URL}api/contact-submission.php`
+    : '/api/contact-submission';
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
