@@ -1,3 +1,4 @@
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^contact-submission$ contact-submission.php [L]
+RewriteRule ^sharepoint-contact-list$ contact-submission.php [L]

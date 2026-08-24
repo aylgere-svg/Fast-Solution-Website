@@ -9,6 +9,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $tenantId = env_value('SHAREPOINT_TENANT_ID');
+    $clientId = env_value('SHAREPOINT_CLIENT_ID');
+    $clientSecret = env_value('SHAREPOINT_CLIENT_SECRET');
+    $siteId = env_value('SHAREPOINT_SITE_ID');
+    $listId = env_value('SHAREPOINT_LIST_ID');
+
+    if ($tenantId === '' || $clientId === '' || $clientSecret === '' || $siteId === '' || $listId === '') {
+        respond(503, ['error' => 'SharePoint connection is not configured on the server.']);
+    }
+
+    $token = graph_request(
+        'POST',
+        'https://login.microsoftonline.com/' . rawurlencode($tenantId) . '/oauth2/v2.0/token',
+        http_build_query([
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'scope' => 'https://graph.microsoft.com/.default',
+            'grant_type' => 'client_credentials',
+        ]),
+        ['Content-Type: application/x-www-form-urlencoded']
+    );
+    if ($token['status'] < 200 || $token['status'] >= 300 || empty($token['body']['access_token'])) {
+        respond(502, ['error' => 'Microsoft Graph authentication failed.']);
+    }
+
+    $graphSiteId = $siteId;
+    if (preg_match('/^([^:]+):\/?(.+?):?$/', $siteId, $matches) === 1 && strpos($matches[1], '.sharepoint.com') !== false) {
+        $sitePath = preg_replace('/^\/+|:$/', '', $matches[2]);
+        $site = graph_request(
+            'GET',
+            'https://graph.microsoft.com/v1.0/sites/' . $matches[1] . ':/' . $sitePath,
+            null,
+            ['Authorization: Bearer ' . $token['body']['access_token'], 'Accept: application/json']
+        );
+        if ($site['status'] < 200 || $site['status'] >= 300 || empty($site['body']['id'])) {
+            respond(502, ['error' => 'Microsoft Graph could not find the configured SharePoint site.']);
+        }
+        $graphSiteId = $site['body']['id'];
+    }
+
+    $items = graph_request(
+        'GET',
+        'https://graph.microsoft.com/v1.0/sites/' . rawurlencode($graphSiteId) . '/lists/' . rawurlencode($listId) . '/items?expand=fields',
+        null,
+        ['Authorization: Bearer ' . $token['body']['access_token'], 'Accept: application/json']
+    );
+
+    if ($items['status'] === 404) {
+        $lists = graph_request(
+            'GET',
+            'https://graph.microsoft.com/v1.0/sites/' . rawurlencode($graphSiteId) . "/lists?\$select=id,name,displayName&\$filter=displayName%20eq%20'Contact'",
+            null,
+            ['Authorization: Bearer ' . $token['body']['access_token'], 'Accept: application/json']
+        );
+        $contactList = $lists['body']['value'][0] ?? null;
+        if (!empty($contactList['id'])) {
+            $items = graph_request(
+                'GET',
+                'https://graph.microsoft.com/v1.0/sites/' . rawurlencode($graphSiteId) . '/lists/' . rawurlencode($contactList['id']) . '/items?expand=fields',
+                null,
+                ['Authorization: Bearer ' . $token['body']['access_token'], 'Accept: application/json']
+            );
+        }
+    }
+
+    if ($items['status'] < 200 || $items['status'] >= 300) {
+        $message = $items['body']['error']['message'] ?? 'Check the SharePoint site and contact list IDs.';
+        respond(502, ['error' => 'Microsoft Graph returned HTTP ' . $items['status'] . ': ' . $message]);
+    }
+
+    $result = [];
+    foreach (($items['body']['value'] ?? []) as $item) {
+        $result[] = [
+            'id' => (string)($item['id'] ?? ''),
+            'createdDateTime' => $item['createdDateTime'] ?? null,
+            'lastModifiedDateTime' => $item['lastModifiedDateTime'] ?? null,
+            'webUrl' => $item['webUrl'] ?? null,
+            'fields' => $item['fields'] ?? [],
+        ];
+    }
+    respond(200, ['items' => $result]);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(405, ['error' => 'Only POST requests are allowed.']);
 }

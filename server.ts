@@ -48,10 +48,28 @@ async function startServer() {
         graphSiteId = siteData.id;
       }
 
-      const itemsResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${graphSiteId}/lists/${listId}/items?expand=fields`, {
-        headers: { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/json' },
+      const graphHeaders = { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/json' };
+      let itemsResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${graphSiteId}/lists/${listId}/items?expand=fields`, {
+        headers: graphHeaders,
       });
-      const itemsData = await itemsResponse.json().catch(() => ({}));
+      let itemsData = await itemsResponse.json().catch(() => ({}));
+
+      // Resolve stale list IDs by the actual SharePoint Contact list name.
+      if (itemsResponse.status === 404) {
+        const listsResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${graphSiteId}/lists?$select=id,name,displayName&$filter=displayName eq 'Contact'`, {
+          headers: graphHeaders,
+        });
+        const listsData = await listsResponse.json().catch(() => ({}));
+        const contactList = (listsData.value || []).find((list: any) =>
+          String(list.displayName || list.name).toLowerCase() === 'contact'
+        );
+        if (contactList?.id) {
+          itemsResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${graphSiteId}/lists/${contactList.id}/items?expand=fields`, {
+            headers: graphHeaders,
+          });
+          itemsData = await itemsResponse.json().catch(() => ({}));
+        }
+      }
       if (!itemsResponse.ok) {
         return res.status(502).json({
           error: `Microsoft Graph returned HTTP ${itemsResponse.status}: ${itemsData?.error?.message || 'Check the SharePoint site and contact list IDs.'}`,
