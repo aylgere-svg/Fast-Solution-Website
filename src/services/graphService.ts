@@ -453,7 +453,7 @@ export const fetchSharePointItemsViaGraph = async (
   }
 
   // Real Microsoft Graph API logic
-  if (config.authMode !== 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+  if ((config.authMode as string) !== 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
     try {
       const graphUrl = getGraphListUrl(config, listId) + '?expand=fields';
       const response = await fetch(graphUrl, {
@@ -578,8 +578,21 @@ export const createSharePointItemViaGraph = async (
     },
   };
 
+  if (config.authMode === 'azure_app_registration') {
+    const response = await fetch('/api/sharepoint-contact-item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.item) {
+      throw new Error(data.error || 'Unable to create the SharePoint contact.');
+    }
+    return data.item as SharePointItem;
+  }
+
   // Real Microsoft Graph API logic
-  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+  if ((config.authMode as string) !== 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
     try {
       const graphUrl = getGraphListUrl(config, listId);
       const payload = { fields };
@@ -700,8 +713,21 @@ export const updateSharePointItemViaGraph = async (
   const locationUrl = currentList?.locationUrl || config.listLocationUrl || `${config.siteUrl}/Lists/${listId}`;
   const webhookUrl = currentList?.directWebhookUrl || config.directWebhookUrl;
 
+  if (config.authMode === 'azure_app_registration') {
+    const response = await fetch(`/api/sharepoint-contact-item?itemId=${encodeURIComponent(itemId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.item) {
+      throw new Error(data.error || 'Unable to update the SharePoint contact.');
+    }
+    return data.item as SharePointItem;
+  }
+
   // Real Microsoft Graph API logic
-  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+  if ((config.authMode as string) !== 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
     try {
       const graphUrl = `${getGraphListUrl(config, listId)}/${itemId}`;
       const payload = { fields };
@@ -806,8 +832,19 @@ export const deleteSharePointItemViaGraph = async (
   const locationUrl = currentList?.locationUrl || config.listLocationUrl || `${config.siteUrl}/Lists/${listId}`;
   const webhookUrl = currentList?.directWebhookUrl || config.directWebhookUrl;
 
+  if (config.authMode === 'azure_app_registration') {
+    const response = await fetch(`/api/sharepoint-contact-item?itemId=${encodeURIComponent(itemId)}`, {
+      method: 'DELETE',
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.deleted) {
+      throw new Error(data.error || 'Unable to delete the SharePoint contact.');
+    }
+    return true;
+  }
+
   // Real Microsoft Graph API logic
-  if (config.authMode === 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
+  if ((config.authMode as string) !== 'azure_app_registration' && config.accessToken && !config.accessToken.startsWith('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1pY3Jvc29mdEVudHJhSUQifQ.')) {
     try {
       const graphUrl = `${getGraphListUrl(config, listId)}/${itemId}`;
       const response = await fetch(graphUrl, {

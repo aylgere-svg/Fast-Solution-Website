@@ -87,6 +87,85 @@ async function startServer() {
     }
   });
 
+  app.all('/api/sharepoint-contact-item', async (req, res) => {
+    if (!['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+      return res.status(405).json({ error: 'Only POST, PATCH, and DELETE are allowed.' });
+    }
+
+    const listId = String(process.env.SHAREPOINT_LIST_ID || '').trim();
+    const { SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, SHAREPOINT_CLIENT_SECRET, SHAREPOINT_SITE_ID } = process.env;
+    if (!listId || !SHAREPOINT_TENANT_ID || !SHAREPOINT_CLIENT_ID || !SHAREPOINT_CLIENT_SECRET || !SHAREPOINT_SITE_ID) {
+      return res.status(503).json({ error: 'SharePoint connection is not configured on the server.' });
+    }
+
+    try {
+      const tokenResponse = await fetch(`https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/v2.0/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: SHAREPOINT_CLIENT_ID,
+          client_secret: SHAREPOINT_CLIENT_SECRET,
+          scope: 'https://graph.microsoft.com/.default',
+          grant_type: 'client_credentials',
+        }),
+      });
+      const tokenData = await tokenResponse.json().catch(() => ({}));
+      if (!tokenResponse.ok || !tokenData.access_token) {
+        return res.status(502).json({ error: 'Microsoft Graph authentication failed.' });
+      }
+
+      let graphSiteId = SHAREPOINT_SITE_ID;
+      const colonSite = SHAREPOINT_SITE_ID.match(/^([^:]+):\/?(.+?):?$/);
+      if (colonSite && colonSite[1].includes('.sharepoint.com')) {
+        const sitePath = colonSite[2].replace(/^\/+|:$/g, '');
+        const siteLookup = await fetch(`https://graph.microsoft.com/v1.0/sites/${colonSite[1]}:/${sitePath}`, {
+          headers: { Authorization: `Bearer ${tokenData.access_token}`, Accept: 'application/json' },
+        });
+        const siteData = await siteLookup.json().catch(() => ({}));
+        if (!siteLookup.ok || !siteData.id) {
+          return res.status(502).json({ error: 'Microsoft Graph could not find the configured SharePoint site.' });
+        }
+        graphSiteId = siteData.id;
+      }
+
+      const itemId = String(req.query.itemId || req.body?.itemId || '').trim();
+      let targetListId = listId;
+      const graphHeaders = {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      };
+      const itemUrl = () => `https://graph.microsoft.com/v1.0/sites/${graphSiteId}/lists/${targetListId}/items${itemId ? `/${encodeURIComponent(itemId)}` : ''}`;
+      let response = await fetch(itemUrl(), {
+        method: req.method,
+        headers: graphHeaders,
+        ...(req.method !== 'DELETE' ? { body: JSON.stringify(req.body?.fields ? { fields: req.body.fields } : { fields: req.body || {} }) } : {}),
+      });
+
+      if (response.status === 404) {
+        const listsResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${graphSiteId}/lists?$select=id,name,displayName`, { headers: graphHeaders });
+        const listsData = await listsResponse.json().catch(() => ({}));
+        const contactList = (listsData.value || []).find((list: any) => String(list.displayName || list.name).toLowerCase() === 'contact');
+        if (contactList?.id) {
+          targetListId = contactList.id;
+          response = await fetch(itemUrl(), {
+            method: req.method,
+            headers: graphHeaders,
+            ...(req.method !== 'DELETE' ? { body: JSON.stringify(req.body?.fields ? { fields: req.body.fields } : { fields: req.body || {} }) } : {}),
+          });
+        }
+      }
+
+      const responseData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return res.status(502).json({ error: `Microsoft Graph returned HTTP ${response.status}: ${responseData?.error?.message || 'SharePoint item mutation failed.'}` });
+      }
+      return res.status(response.status === 204 ? 200 : response.status).json({ item: responseData, deleted: req.method === 'DELETE' });
+    } catch {
+      return res.status(502).json({ error: 'Unable to reach SharePoint.' });
+    }
+  });
+
   app.post('/api/contact-submission', async (req, res) => {
     const { title, clientName, email, phone, service, notes, source, estimatedValue } = req.body || {};
     if (!clientName?.trim() || !email?.trim()) {

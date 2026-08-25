@@ -93,6 +93,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     respond(200, ['items' => $result]);
 }
 
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true) && basename($_SERVER['SCRIPT_NAME']) === 'contact-submission.php' && strpos($_SERVER['REQUEST_URI'] ?? '', 'sharepoint-contact-item') !== false) {
+    $tenantId = env_value('SHAREPOINT_TENANT_ID');
+    $clientId = env_value('SHAREPOINT_CLIENT_ID');
+    $clientSecret = env_value('SHAREPOINT_CLIENT_SECRET');
+    $siteId = env_value('SHAREPOINT_SITE_ID');
+    $listId = env_value('SHAREPOINT_LIST_ID');
+    $payload = json_decode(file_get_contents('php://input'), true);
+    $itemId = trim((string)($_GET['itemId'] ?? ($payload['itemId'] ?? '')));
+    if ($listId === '' || $tenantId === '' || $clientId === '' || $clientSecret === '' || $siteId === '' || ($_SERVER['REQUEST_METHOD'] !== 'POST' && $itemId === '')) {
+        respond(400, ['error' => 'Invalid SharePoint item request.']);
+    }
+
+    $token = graph_request('POST', 'https://login.microsoftonline.com/' . rawurlencode($tenantId) . '/oauth2/v2.0/token', http_build_query([
+        'client_id' => $clientId, 'client_secret' => $clientSecret, 'scope' => 'https://graph.microsoft.com/.default', 'grant_type' => 'client_credentials'
+    ]), ['Content-Type: application/x-www-form-urlencoded']);
+    if ($token['status'] < 200 || $token['status'] >= 300 || empty($token['body']['access_token'])) {
+        respond(502, ['error' => 'Microsoft Graph authentication failed.']);
+    }
+
+    $graphSiteId = $siteId;
+    if (preg_match('/^([^:]+):\/?(.+?):?$/', $siteId, $matches) === 1 && strpos($matches[1], '.sharepoint.com') !== false) {
+        $sitePath = preg_replace('/^\/+|:$/', '', $matches[2]);
+        $site = graph_request('GET', 'https://graph.microsoft.com/v1.0/sites/' . $matches[1] . ':/' . $sitePath, null, ['Authorization: Bearer ' . $token['body']['access_token']]);
+        if ($site['status'] < 200 || $site['status'] >= 300 || empty($site['body']['id'])) {
+            respond(502, ['error' => 'Microsoft Graph could not find the configured SharePoint site.']);
+        }
+        $graphSiteId = $site['body']['id'];
+    }
+
+    $url = 'https://graph.microsoft.com/v1.0/sites/' . rawurlencode($graphSiteId) . '/lists/' . rawurlencode($listId) . '/items' . ($itemId === '' ? '' : '/' . rawurlencode($itemId));
+    $body = $_SERVER['REQUEST_METHOD'] === 'DELETE' ? null : json_encode(['fields' => $payload['fields'] ?? $payload ?? []], JSON_UNESCAPED_SLASHES);
+    $result = graph_request($_SERVER['REQUEST_METHOD'], $url, $body, ['Authorization: Bearer ' . $token['body']['access_token'], 'Content-Type: application/json', 'Accept: application/json']);
+    if ($result['status'] < 200 || $result['status'] >= 300) {
+        $message = $result['body']['error']['message'] ?? 'SharePoint item mutation failed.';
+        respond(502, ['error' => 'Microsoft Graph returned HTTP ' . $result['status'] . ': ' . $message]);
+    }
+    respond(200, ['item' => $result['body'], 'deleted' => $_SERVER['REQUEST_METHOD'] === 'DELETE']);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(405, ['error' => 'Only POST requests are allowed.']);
 }
